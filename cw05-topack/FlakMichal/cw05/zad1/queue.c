@@ -10,7 +10,13 @@
 int __q_task_queue = 0;
 
 int get_task_queue(){
-    key_t key = ftok("/home", Q_TASK_KEY_CONST);
+    char* path = getenv("HOME");
+    if(path == NULL){
+        perror("server: getting environmental variable 'HOME' failed\n");
+        exit(0);
+    }
+
+    key_t key = ftok(path, Q_TASK_KEY_CONST);
     printf("Key: %d\n", key);
     int queue = msgget(key, IPC_CREAT);
     printf("Queue: %d\n", queue);

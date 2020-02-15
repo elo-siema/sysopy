@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -std=c11
+CFLAGS = -Wall -std=c11 -g
 
 all: clean server.o client.o
 
@@ -10,4 +10,5 @@ client.o: queue.h server.c
 	$(CC) $(CFLAGS) -o client.o client.c queue.c
 
 clean:
+
 	-rm -rf *.o *.so.* *.so *.a *.gch $(TARGET)

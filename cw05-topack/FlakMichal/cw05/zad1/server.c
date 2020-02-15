@@ -5,6 +5,7 @@
 #include <sys/ipc.h>
 #include <string.h>
 #include <signal.h>
+#include <time.h>
 #include "queue.h"
 
 
@@ -41,7 +42,7 @@ void respond(int pid, char *content){
 
     struct msgbuf msg;
     msg.id = cid;
-    msg.type = atoi(RESP);
+    msg.mtype = RESP;
     strcpy(msg.content, content);
 
     int result = msgsnd(queue, &msg, sizeof(struct msgbuf) - sizeof(long), 0);
@@ -53,31 +54,50 @@ void respond(int pid, char *content){
 
 //msg handling
 void handle_hello(struct msgbuf *msgp){
+    printf("S: Received HELLO\n");
     clients_no++;
     client_pid[clients_no] = msgp->id;
-    client_queue[clients_no] = (int)msgp->content[0];
+    key_t key = atoi(msgp->content);
+    int queue = msgget(key, IPC_CREAT);
+
+    printf("S: Opening client Queue: key: %d\n", key);
+    printf("S: Opening client Queue: qid: %d\n", queue);
+    if(queue < 0) {
+        perror("S: Failed to create client queue");
+        exit(0);
+    }
+    client_queue[clients_no] = queue;
 
     respond(msgp->id, "ACK"); 
 }
 
 void handle_time(struct msgbuf *msgp){
-    respond(msgp->id, "ACK TIME");
+    printf("S: Received TIME\n");
+    time_t timer;
+    time(&timer);
+    char timeStr[30];
+    struct tm * timeinfo = localtime(&timer);
+    strftime(timeStr, 20, "%b %d %H:%M", timeinfo);
+
+    respond(msgp->id, timeStr);
 }
 
 void handle_stop(struct msgbuf *msgp){
+    printf("S: Received STOP\n");
     int cid = find_cid(msgp->id);
-    int queue = client_queue[cid];
+    /*int queue = client_queue[cid];
 
     int result = msgctl(queue, IPC_RMID, NULL);
     if(result < 0) {
         perror("S: Failed to remove client queue");
         exit(0);
-    }
+    }*/
     client_pid[cid] = 0;
     client_queue[cid] = 0;
 }
 
 void handle_end(){
+    printf("S: Received END\n");
     received_exit = 1;
 }
 
@@ -92,12 +112,14 @@ void listen(int task_queue){
         result = msgrcv(task_queue, &msg, sizeof(struct msgbuf) - sizeof(long), 0, flags);
 
         if(result < 0) {
-            perror("S: Failed to receive msg");
+            perror("S: No more messages in the queue");
     	    printf("err: %d\n", result);
             exit(0);
         }
 
-        switch(msg.type) {
+
+        printf("S: Received message!\n");
+        switch(msg.mtype) {
             case HELLO:
                 handle_hello(&msg);
                 break;

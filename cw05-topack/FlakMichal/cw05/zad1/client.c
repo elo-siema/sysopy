@@ -5,27 +5,30 @@
 #include <sys/ipc.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string.h>
 #include <signal.h>
 #include "queue.h"
 
-void intHandler(int dummy) {
-    printf("C: Received ctrl+c, goodbye\n");
-    exit(0);
-}
 
 int __resp_queue = 0;
-int __task_queue = 0;
+key_t __task_queue = 0;
 int my_id = 0;
+int received_exit = 0;
 
-int get_resp_queue() {
-    key_t key = ftok("$HOME", Q_TASK_KEY_CONST);
+key_t create_and_get_resp_queue_key() {
+    char* path = getenv("HOME");
+    if(path == NULL){
+        perror("server: getting environmental variable 'HOME' failed\n");
+        exit(0);
+    }
+    key_t key = ftok(path, getpid());
     int queue = msgget(key, IPC_CREAT);
     if(queue < 0) {
         perror("Failed to create task queue");
         exit(0);
     }
     __resp_queue = queue;
-    return queue;
+    return key;
 }
 
 void delete_resp_queue(){
@@ -34,21 +37,31 @@ void delete_resp_queue(){
         perror("Failed to remove task queue");
         exit(0);
     }
+    printf("C: Deleted resp queue\n");
 }
+
+void intHandler(int dummy) {
+
+    printf("C: Received ctrl+c, goodbye\n");
+    received_exit = 1;
+}
+
 
 void send_msg(enum MSG_TYPE type, char* content){
     printf("C: Sending message\n");  
     struct msgbuf msg;
     msg.id = getpid();
-    msg.type = (long)type;
+    msg.mtype = (long)type;
     strcpy(msg.content, content);
 
     
     printf("C: Sending id: %d\n", msg.id);
-    printf("C: Sending type: %d\n", msg.type);
+    printf("C: Sending type: %ld\n", msg.mtype);
     printf("C: Sending content: %s\n", msg.content);
 
-    int result = msgsnd(__task_queue, &msg, sizeof(struct msgbuf) - sizeof(long), 0);
+    size_t size = sizeof(struct msgbuf) - sizeof(long);
+
+    int result = msgsnd(__task_queue, &msg, size, 0);
     if(result < 0) {
         perror("C: Failed to send response");
         exit(0);
@@ -92,38 +105,43 @@ int main(int argc, char **argv)
     int task_queue = get_task_queue();
     __task_queue = task_queue;
     printf("C: Creating resp queue\n");
-    int resp_queue = get_resp_queue();
-
-    int stopped = 0;
+    key_t key = create_and_get_resp_queue_key();
     
     char command[40];
 
-    printf("C: Establishing handshake\n");  
-    char resp_queue_str[100];
-    snprintf(resp_queue_str, 100, "%d", resp_queue);
-    send_msg(HELLO, resp_queue_str);  
+    printf("C: Establishing handshake, sending key of privete q:\n");  
+    char key_str[100];
+    snprintf(key_str, 100, "%d", key);
+    send_msg(HELLO, key_str);  
     printf("C: Waiting for response from handshake\n"); 
     wait_for_response(HELLO);
 
     printf("C: Entering loop\n");
-    while(1){
-        gets(command, 4);
+    while(!received_exit){
+        fgets(command, 5, stdin);
+        //remove newline from command:
+        if (command[strlen(command)-1] == '\n') command[strlen(command)-1] = '\0';
         if(!strcmp(command, "STOP")) {
             
-            printf("Sending STOP, Exiting...\n");
-            return 0;        
+            printf("Exiting...\n");
+            break;
         }
         if(!strcmp(command, "END")) {
             
             printf("Sending END...\n");
-            return 0;        
+            send_msg(END, "\0"); 
         }
-        if(!strcmp(command, "DATE")) {
+        if(!strcmp(command, "TIME")) {
             
-            printf("Sending DATE...\n");
-            return 0;        
+            printf("Sending TIME...\n");
+            send_msg(TIME, "\0"); 
+            wait_for_response(TIME);
         }
     }    
+
+    printf("C: Exiting...\n");
+    delete_resp_queue();
+    exit(0);
 
     return 0;
 }
