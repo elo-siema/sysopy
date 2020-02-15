@@ -1,3 +1,9 @@
-make all produkuje main.o.
-Przykładowe wywołanie:
-./main.o -L 10000 --Type 2
+make all produkuje server.o i client.o
+Kolejnosc otwierania:
+server.o
+client.o
+
+Dostepne polecenia w kliencie:
+TIME - zadanie czasu
+END - zamyka serwer
+STOP - zamyka klient
