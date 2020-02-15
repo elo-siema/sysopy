@@ -1,0 +1,16 @@
+[2020-02-15 05:38:41.510] [renderer1] [error] timeout after 500 ms: Error: timeout after 500 ms
+    at t.RawDebugSession.handleErrorResponse (file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:2892:728)
+    at file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:2892:159
+    at async t.RawDebugSession.shutdown (file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:2890:248)
+    at async R.terminate (file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:5552:511)
+    at async Promise.all (index 0)
+[2020-02-15 05:42:04.694] [renderer1] [error] Unable to step out. Operation failed with error code 0x80004004.: Error: Unable to step out. Operation failed with error code 0x80004004.
+    at t.RawDebugSession.handleErrorResponse (file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:2892:728)
+    at file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:2892:159
+    at async t.RawDebugSession.stepOut (file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:2886:427)
+    at async R.stepOut (file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:5556:265)
+    at async D (file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:5104:574)
+[2020-02-15 05:42:59.060] [renderer1] [error] timeout after 500 ms: Error: timeout after 500 ms
+    at t.RawDebugSession.handleErrorResponse (file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:2892:728)
+    at file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:2892:159
+    at async t.RawDebugSession.shutdown (file:///snap/code/25/usr/share/code/resources/app/out/vs/workbench/workbench.desktop.main.js:2890:248)

@@ -1,40 +1,39 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <sys/msg.h>
-#include <sys/ipc.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <mqueue.h>
 #include "queue.h"
 
-
-int __resp_queue = 0;
-key_t __task_queue = 0;
+char __resp_queue_key[20];
+mqd_t __resp_queue = 0;
+mqd_t __task_queue = 0;
 int my_id = 0;
 int received_exit = 0;
 
-key_t create_and_get_resp_queue_key() {
-    char* path = getenv("HOME");
-    if(path == NULL){
-        perror("server: getting environmental variable 'HOME' failed\n");
-        exit(0);
-    }
-    key_t key = ftok(path, getpid());
-    int queue = msgget(key, IPC_CREAT);
+char* create_and_get_resp_queue_key() {
+    __resp_queue_key[0] = '/';
+    //generate others
+    mqd_t queue = mq_open(__resp_queue_key, O_CREAT, 777, NULL);
     if(queue < 0) {
         perror("Failed to create task queue");
         exit(0);
     }
     __resp_queue = queue;
-    return key;
+    return __resp_queue_key;
 }
 
 void delete_resp_queue(){
-    int result = msgctl(__resp_queue, IPC_RMID, NULL);
+    int result = mq_close(__resp_queue);
     if(result < 0) {
-        perror("Failed to remove task queue");
+        perror("Failed to close resp queue");
+        exit(0);
+    }
+    result = mq_unlink(__resp_queue_key);
+    if(result < 0) {
+        perror("Failed to unlink resp queue");
         exit(0);
     }
     printf("C: Deleted resp queue\n");
@@ -49,7 +48,7 @@ void intHandler(int dummy) {
 
 void send_msg(enum MSG_TYPE type, char* content){
     printf("C: Sending message\n");  
-    struct msgbuf msg;
+    struct my_msg msg;
     msg.id = getpid();
     msg.mtype = (long)type;
     strcpy(msg.content, content);
@@ -59,9 +58,9 @@ void send_msg(enum MSG_TYPE type, char* content){
     printf("C: Sending type: %ld\n", msg.mtype);
     printf("C: Sending content: %s\n", msg.content);
 
-    size_t size = sizeof(struct msgbuf) - sizeof(long);
+    size_t size = sizeof(struct my_msg);
 
-    int result = msgsnd(__task_queue, &msg, size, 0);
+    int result = mq_send(__task_queue, &msg, size, 0);
     if(result < 0) {
         perror("C: Failed to send response");
         exit(0);
@@ -71,10 +70,12 @@ void send_msg(enum MSG_TYPE type, char* content){
 
 
 void wait_for_response(enum MSG_TYPE type){
-    struct msgbuf msg;
+    struct my_msg msg;
     int result = 0;
     int flags = 0;
-    result = msgrcv(__resp_queue, &msg, sizeof(struct msgbuf) - sizeof(long), 0, flags);
+
+    unsigned int msg_prio;
+    result = mq_receive(__resp_queue, &msg, sizeof(struct my_msg), 0, &msg_prio);
 
     if(result < 0) {
         perror("C: Failed to receive msg");
@@ -105,7 +106,7 @@ int main(int argc, char **argv)
     int task_queue = get_task_queue();
     __task_queue = task_queue;
     printf("C: Creating resp queue\n");
-    key_t key = create_and_get_resp_queue_key();
+    char* key = create_and_get_resp_queue_key();
     
     char command[40];
 

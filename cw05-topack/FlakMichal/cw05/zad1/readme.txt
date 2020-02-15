@@ -1,7 +1,7 @@
 make all produkuje server.o i client.o
 Kolejnosc otwierania:
-server.o
-client.o
+sudo server.o
+sudo client.o
 
 Dostepne polecenia w kliencie:
 TIME - zadanie czasu

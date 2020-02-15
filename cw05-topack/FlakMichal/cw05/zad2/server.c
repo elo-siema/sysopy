@@ -1,8 +1,7 @@
+#include <mqueue.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <sys/msg.h>
-#include <sys/ipc.h>
 #include <string.h>
 #include <signal.h>
 #include <time.h>
@@ -12,13 +11,14 @@
 #define MAX_CLIENTS 10
 int clients_no = 0;
 int client_pid[MAX_CLIENTS];
-int client_queue[MAX_CLIENTS];
+mqd_t client_queue[MAX_CLIENTS];
 
 int received_exit = 0;
 
 void intHandler(int dummy) {
     printf("S: Received stop, deleting queue...\n");
     delete_task_queue();
+    //todo:: delete all queues
     printf("S: Deleted queue, goodbye\n");
     exit(0);
 }
@@ -38,14 +38,14 @@ void respond(int pid, char *content){
         printf("S: Client: %d not found.\n", cid);
     }
 
-    int queue = client_queue[cid];
+    mqd_t queue = client_queue[cid];
 
-    struct msgbuf msg;
+    struct my_msg msg;
     msg.id = cid;
     msg.mtype = RESP;
     strcpy(msg.content, content);
 
-    int result = msgsnd(queue, &msg, sizeof(struct msgbuf) - sizeof(long), 0);
+    int result = mq_send(queue, (const char*)&msg, sizeof(struct my_msg), 0);
     if(result < 0) {
         perror("S: Failed to send response");
         exit(0);
@@ -53,14 +53,13 @@ void respond(int pid, char *content){
 }
 
 //msg handling
-void handle_hello(struct msgbuf *msgp){
+void handle_hello(struct my_msg *msgp){
     printf("S: Received HELLO\n");
     clients_no++;
     client_pid[clients_no] = msgp->id;
-    key_t key = atoi(msgp->content);
-    int queue = msgget(key, IPC_CREAT);
+    mqd_t queue = mq_open(msgp->content, O_CREAT, 777, NULL);
 
-    printf("S: Opening client Queue: key: %d\n", key);
+    printf("S: Opening client Queue: key: %s\n", msgp->content);
     printf("S: Opening client Queue: qid: %d\n", queue);
     if(queue < 0) {
         perror("S: Failed to create client queue");
@@ -71,7 +70,7 @@ void handle_hello(struct msgbuf *msgp){
     respond(msgp->id, "ACK"); 
 }
 
-void handle_time(struct msgbuf *msgp){
+void handle_time(struct my_msg *msgp){
     printf("S: Received TIME\n");
     time_t timer;
     time(&timer);
@@ -82,34 +81,45 @@ void handle_time(struct msgbuf *msgp){
     respond(msgp->id, timeStr);
 }
 
-void handle_stop(struct msgbuf *msgp){
+void handle_stop(struct my_msg *msgp){
     printf("S: Received STOP\n");
     int cid = find_cid(msgp->id);
-    /*int queue = client_queue[cid];
+    mqd_t queue = client_queue[cid];
 
-    int result = msgctl(queue, IPC_RMID, NULL);
+    int result = mq_close(queue);
     if(result < 0) {
         perror("S: Failed to remove client queue");
         exit(0);
-    }*/
+    }
     client_pid[cid] = 0;
     client_queue[cid] = 0;
 }
 
 void handle_end(){
     printf("S: Received END\n");
+    for(int i = 0; i < MAX_CLIENTS; i++){
+        if(client_queue[i] > 0) {
+            mq_close(client_queue[i]);
+        }
+    }
     received_exit = 1;
 }
 
 void listen(int task_queue){
-    struct msgbuf msg;
+    struct my_msg msg;
     int result = 0;
     int flags = 0;
+    struct timespec abs_timeout;
+    abs_timeout.tv_sec = 0;
+    abs_timeout.tv_nsec = 0;
+    unsigned int msg_prio;
     while(1){
         if(received_exit){
-            flags = IPC_NOWAIT;
+            result = mq_timedreceive(task_queue, &msg, sizeof(struct my_msg), &msg_prio, &abs_timeout);
         }
-        result = msgrcv(task_queue, &msg, sizeof(struct msgbuf) - sizeof(long), 0, flags);
+        else {
+            result = mq_receive(task_queue, &msg, sizeof(struct my_msg), &msg_prio);
+        }
 
         if(result < 0) {
             perror("S: No more messages in the queue");
@@ -146,7 +156,7 @@ int main(int argc, char **argv)
     printf("S: Setting signal handling...\n");
     signal(SIGINT, intHandler);
     printf("S: Creating task queue...\n");
-    int queue = get_task_queue();
+    mqd_t queue = get_task_queue();
     printf("S: Server queue created: %d - listening...\n", queue);
     listen(queue);
     printf("S: Ended, deleting server queue...\n");
