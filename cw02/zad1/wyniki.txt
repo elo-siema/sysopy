@@ -1,0 +1,42 @@
+Sortowanie:
+lib: 9.89s real, 1.68s user, 8.18s sys - size: 4, records: 2000
+sys: 8.28s real, 1.14s user, 7.14s sys - size: 4, records: 2000
+lib: 9.82s real, 1.56s user, 8.25s sys - size: 512, records: 2000
+sys: 8.42s real, 1.17s user, 7.23s sys - size: 512, records: 2000
+lib: 10.34s real, 1.46s user, 8.87s sys - size: 4096, records: 2000
+sys: 10.76s real, 1.14s user, 9.60s sys - size: 4096, records: 2000
+lib: 15.59s real, 1.73s user, 13.57s sys - size: 8192, records: 2000
+sys: 15.27s real, 1.17s user, 14.03s sys - size: 8192, records: 2000
+lib: 19.53s real, 2.85s user, 16.56s sys - size: 4, records: 2500
+sys: 16.06s real, 2.31s user, 13.64s sys - size: 4, records: 2500
+lib: 16.94s real, 2.70s user, 14.20s sys - size: 512, records: 2500
+sys: 13.71s real, 1.65s user, 12.04s sys - size: 512, records: 2500
+lib: 15.96s real, 1.76s user, 14.20s sys - size: 4096, records: 2500
+sys: 15.63s real, 1.57s user, 14.04s sys - size: 4096, records: 2500
+lib: 18.93s real, 2.15s user, 16.73s sys - size: 8192, records: 2500
+sys: 18.57s real, 1.87s user, 16.67s sys - size: 8192, records: 2500
+Wnioski:
+Im mniejszy rozmiar rekordu, tym większą przewagę ma funkcja systemowa.
+Zwiększając rozmiar rekordu różnica się wyrównuje.
+
+Kopiowanie:
+lib: 0.80s real, 0.10s user, 0.68s sys - size: 4, records: 100000
+sys: 0.80s real, 0.07s user, 0.71s sys - size: 4, records: 100000
+lib: 0.92s real, 0.07s user, 0.84s sys - size: 512, records: 100000
+sys: 0.91s real, 0.09s user, 0.81s sys - size: 512, records: 100000
+lib: 1.37s real, 0.10s user, 1.25s sys - size: 4096, records: 100000
+sys: 1.42s real, 0.07s user, 1.21s sys - size: 4096, records: 100000
+lib: 1.73s real, 0.04s user, 1.60s sys - size: 8192, records: 100000
+sys: 1.43s real, 0.07s user, 1.34s sys - size: 8192, records: 100000
+lib: 1.58s real, 0.09s user, 1.45s sys - size: 4, records: 200000
+sys: 1.56s real, 0.15s user, 1.39s sys - size: 4, records: 200000
+lib: 1.82s real, 0.17s user, 1.64s sys - size: 512, records: 200000
+sys: 1.82s real, 0.18s user, 1.62s sys - size: 512, records: 200000
+lib: 2.57s real, 0.18s user, 2.37s sys - size: 4096, records: 200000
+sys: 2.66s real, 0.14s user, 2.29s sys - size: 4096, records: 200000
+lib: 3.21s real, 0.20s user, 2.75s sys - size: 8192, records: 200000
+sys: 13.42s real, 0.17s user, 2.62s sys - size: 8192, records: 200000
+Wnioski:
+Przy niewielkim rozmiarze rekordu czasy są praktycznie identyczne.
+Różnica na korzyść funkcji bibliotecznej pojawia się wraz ze
+zwiększeniem rozmiaru rekordu.

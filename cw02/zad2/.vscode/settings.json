@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "string.h": "c",
+        "print_files.h": "c",
+        "ftw.h": "c"
+    }
+}
